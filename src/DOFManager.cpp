@@ -59,6 +59,13 @@ void DOFManager::UpdateENBParams()
 	g_ENB->SetParameter(NULL, "ENBDEPTHOFFIELD.FX", "Target Focus Percent", &param);
 }
 
+void CompileAndRun_Impl(RE::Script* script, RE::ScriptCompiler* a_compiler, RE::COMPILER_NAME a_name, RE::TESObjectREFR* a_targetRef)
+{
+	using func_t = decltype(&CompileAndRun_Impl);
+	REL::Relocation<func_t> func{ RELOCATION_ID(21416, 441582) };
+	return func(script, a_compiler, a_name, a_targetRef);
+}
+
 void DOFManager::UpdateDOF(float a_delta)
 {
 	targetFocusEnabled = GetTargetLockEnabled();
@@ -73,14 +80,22 @@ void DOFManager::UpdateDOF(float a_delta)
 	if (targetFocusEnabled)
 		targetFocusDistanceENB = static_cast<float>(targetFocusDistanceGame / 70.0280112 / 1000);
 
-	targetFocusPercent = std::lerp(targetFocusPercent, targetFocusEnabled, a_delta);
+	float b = 0;
+	if (targetFocusEnabled) {
+		b = 1;
+	}
+
+	targetFocusPercent = std::lerp(targetFocusPercent, b, a_delta);
 
 	if (auto scriptFactory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::Script>()) {
 		if (auto script = scriptFactory->Create()) {
+			RE::ScriptCompiler compiler;
 			script->SetCommand(fmt::format(FMT_STRING("configureddof farblur {}"), targetFocusPercent));
-			script->CompileAndRun(nullptr);
+			//script->CompileAndRun(nullptr);
+			CompileAndRun_Impl(script, &compiler, RE::COMPILER_NAME::kSystemWindowCompiler, nullptr);
 			script->SetCommand(fmt::format(FMT_STRING("configureddof farrange {}"), max(500, targetFocusDistanceGame)));
-			script->CompileAndRun(nullptr);
+			//script->CompileAndRun(nullptr);
+			CompileAndRun_Impl(script, &compiler, RE::COMPILER_NAME::kSystemWindowCompiler, nullptr);
 			delete script;
 		}
 	}
